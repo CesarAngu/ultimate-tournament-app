@@ -1,0 +1,97 @@
+datasource db {
+  provider = "postgresql"   // o "mysql" o "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Jugador {
+  id                    Int                     @id @default(autoincrement())
+  nombre                String
+  apodo                 String?
+  numero                Int?
+  tipo_identificacion   String?
+  numero_identificacion String   @unique
+  correo                String   @unique
+  telefono              String?
+  eps                   String?
+  foto_url              String?
+  creado_en             DateTime @default(now())
+
+  equiposParticipacion  JugadorEquipo[]
+  estadisticas          EstadisticaJugador[]
+}
+
+model Equipo {
+  id              Int                    @id @default(autoincrement())
+  nombre          String
+  liga            String?
+  creado_en       DateTime @default(now())
+
+  participaciones JugadorEquipo[]
+  partidosComoA   Partido[] @relation("equipoA")
+  partidosComoB   Partido[] @relation("equipoB")
+  partidosGanados Partido[] @relation("ganadorEquipo")
+}
+
+model Torneo {
+  id             Int                    @id @default(autoincrement())
+  nombre         String
+  fecha_inicio   DateTime?
+  fecha_fin      DateTime?
+  creado_en      DateTime @default(now())
+
+  participantes  JugadorEquipo[]
+  partidos       Partido[]
+}
+
+model JugadorEquipo {
+  id        Int     @id @default(autoincrement())
+  jugador   Jugador @relation(fields: [jugadorId], references: [id])
+  jugadorId Int
+
+  equipo    Equipo  @relation(fields: [equipoId], references: [id])
+  equipoId  Int
+
+  torneo    Torneo  @relation(fields: [torneoId], references: [id])
+  torneoId  Int
+
+  @@unique([jugadorId, equipoId, torneoId])
+}
+
+model Partido {
+  id              Int       @id @default(autoincrement())
+  torneo          Torneo    @relation(fields: [torneoId], references: [id])
+  torneoId        Int
+
+  equipoA         Equipo    @relation("equipoA", fields: [equipoAId], references: [id])
+  equipoAId       Int
+
+  equipoB         Equipo    @relation("equipoB", fields: [equipoBId], references: [id])
+  equipoBId       Int
+
+  puntajeA        Int?
+  puntajeB        Int?
+
+  ganadorEquipo   Equipo?   @relation("ganadorEquipo", fields: [ganadorEquipoId], references: [id])
+  ganadorEquipoId Int?
+
+  creado_en       DateTime @default(now())
+
+  estadisticas    EstadisticaJugador[]
+}
+
+model EstadisticaJugador {
+  id          Int       @id @default(autoincrement())
+  partido     Partido   @relation(fields: [partidoId], references: [id])
+  partidoId   Int
+
+  jugador     Jugador   @relation(fields: [jugadorId], references: [id])
+  jugadorId   Int
+
+  goles       Int       @default(0)
+  asistencias Int       @default(0)
+  defensas    Int       @default(0)
+}
